@@ -2,55 +2,80 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>熱門餐廳搜尋器 (v7.0 廣域捕捉版)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>熱門餐廳搜尋器 (v8.0 手機優化版)</title>
     <style>
         /* --- CSS 樣式區 --- */
-        body, html { height: 100%; margin: 0; font-family: 'Microsoft JhengHei', sans-serif; background: #f4f7f6; }
+        body, html { height: 100%; margin: 0; font-family: 'Microsoft JhengHei', sans-serif; background: #f4f7f6; overflow: hidden; /* 防止整頁捲動 */ }
+        
         .main-container {
-            max-width: 1200px; margin: 0 auto; padding: 20px; height: calc(100vh - 40px);
+            max-width: 1200px; margin: 0 auto; padding: 20px; 
+            height: 100vh; /* 佔滿視窗高度 */
+            box-sizing: border-box; /* 包含 padding */
             display: flex; flex-direction: column;
         }
-        h2 { text-align: center; color: #333; margin: 0 0 15px 0; }
+        h2 { text-align: center; color: #333; margin: 0 0 10px 0; font-size: 1.2rem; flex-shrink: 0; }
 
-        /* 搜尋區塊 */
+        /* --- 搜尋區塊 --- */
         .search-section {
             background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 15px; flex-shrink: 0;
+            margin-bottom: 10px; flex-shrink: 0; /* 防止被壓縮 */
         }
-        .search-box { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
         
+        .search-box { 
+            display: flex; gap: 8px; flex-wrap: wrap; align-items: center; 
+        }
+        
+        /* 地址輸入框 */
         input#address { 
-            flex: 3; min-width: 200px; padding: 12px; font-size: 16px; 
-            border: 1px solid #ddd; border-radius: 8px; outline: none; transition: 0.3s;
+            flex: 3; min-width: 150px; padding: 10px; font-size: 16px; 
+            border: 1px solid #ddd; border-radius: 8px; outline: none;
         }
         input#address:focus { border-color: #4285F4; }
 
-        .radius-group {
-            flex: 1; display: flex; align-items: center; position: relative; min-width: 140px;
-        }
-        input#radius {
-            width: 100%; padding: 12px; padding-right: 40px; font-size: 16px; 
-            border: 1px solid #ddd; border-radius: 8px; outline: none;
-        }
-        input#radius:focus { border-color: #4285F4; }
-        .unit-label {
-            position: absolute; right: 10px; color: #888; font-size: 14px; pointer-events: none;
+        /* 控制群組 (距離+按鈕) */
+        .controls-group {
+            display: flex; gap: 8px; flex: 2; min-width: 200px;
         }
 
+        /* 距離輸入框 */
+        .radius-group {
+            flex: 1; display: flex; align-items: center; position: relative;
+        }
+        input#radius {
+            width: 100%; padding: 10px; padding-right: 35px; font-size: 16px; 
+            border: 1px solid #ddd; border-radius: 8px; outline: none;
+            box-sizing: border-box;
+        }
+        .unit-label {
+            position: absolute; right: 8px; color: #888; font-size: 12px; pointer-events: none;
+        }
+
+        /* 搜尋按鈕 */
         button { 
-            flex: 0 0 80px; padding: 12px; font-size: 16px; 
+            flex: 0 0 70px; padding: 10px; font-size: 16px; 
             background: #4285F4; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; 
+            white-space: nowrap;
         }
         button:hover { background: #3367D6; }
 
-        #status { text-align: center; margin-top: 10px; font-size: 14px; color: #d32f2f; font-weight: bold; min-height: 20px; }
+        #status { 
+            text-align: center; margin-top: 8px; font-size: 13px; color: #d32f2f; font-weight: bold; min-height: 18px; 
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; /* 防止文字換行撐開高度 */
+        }
         .success-msg { color: #2e7d32 !important; }
 
-        /* 內容區塊 */
-        .content-wrapper { flex: 1; display: flex; gap: 20px; min-height: 0; }
+        /* --- 內容區塊 (地圖+列表) --- */
+        .content-wrapper { 
+            flex: 1; /* 吃掉剩餘空間 */
+            display: flex; gap: 15px; 
+            min-height: 0; /* 關鍵：讓 flex item 內部可以 scroll */
+        }
         
-        #map-container { flex: 6; background: #eee; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: relative; }
+        #map-container { 
+            flex: 6; background: #eee; border-radius: 12px; overflow: hidden; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: relative; 
+        }
         #map { width: 100%; height: 100%; }
         
         #list-container { 
@@ -60,61 +85,91 @@
         }
 
         .list-header {
-            padding: 12px 15px; background: #f8f9fa; border-bottom: 1px solid #eee;
-            color: #555; font-weight: bold; font-size: 14px;
+            padding: 10px 15px; background: #f8f9fa; border-bottom: 1px solid #eee;
+            color: #555; font-weight: bold; font-size: 13px;
             display: flex; justify-content: space-between; align-items: center;
+            flex-shrink: 0;
         }
         
-        ul#list { list-style: none; padding: 0; margin: 0; overflow-y: auto; flex: 1; }
-        li { background: #fff; border-bottom: 1px solid #eee; padding: 15px; display: flex; align-items: flex-start; gap: 15px; cursor: pointer; transition: 0.2s; }
+        ul#list { 
+            list-style: none; padding: 0; margin: 0; 
+            overflow-y: auto; flex: 1; /* 列表捲動區佔滿剩餘空間 */
+            -webkit-overflow-scrolling: touch; /* iOS 滑動順暢 */
+        }
+
+        li { background: #fff; border-bottom: 1px solid #eee; padding: 12px; display: flex; align-items: flex-start; gap: 10px; cursor: pointer; }
         li:hover { background: #f8f9fa; }
         
-        .rank { background: #999; color: white; width: 24px; height: 24px; border-radius: 50%; text-align: center; line-height: 24px; font-size: 12px; flex-shrink: 0; margin-top: 2px; }
+        .rank { background: #999; color: white; width: 22px; height: 22px; border-radius: 50%; text-align: center; line-height: 22px; font-size: 11px; flex-shrink: 0; margin-top: 2px; }
         .top-3 { background: #f44336; }
-        .type-badge { font-size: 11px; color: #666; background: #eee; padding: 2px 6px; border-radius: 4px; margin-left: 5px; }
+        .type-badge { font-size: 10px; color: #666; background: #eee; padding: 2px 4px; border-radius: 4px; margin-left: 4px; vertical-align: middle;}
 
         .info { flex: 1; }
-        .info h3 { margin: 0 0 5px; font-size: 16px; color: #202124; line-height: 1.4; }
-        .info p { margin: 0; color: #5f6368; font-size: 13px; }
-        .meta-tag { display: inline-block; background: #e8f0fe; color: #1967d2; font-size: 12px; padding: 4px 8px; border-radius: 4px; margin-top: 8px; }
+        .info h3 { margin: 0 0 4px; font-size: 15px; color: #202124; line-height: 1.3; }
+        .info p { margin: 0; color: #5f6368; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;}
+        .meta-tag { display: inline-block; background: #e8f0fe; color: #1967d2; font-size: 11px; padding: 3px 6px; border-radius: 4px; margin-top: 6px; }
 
-        /* InfoWindow 自訂樣式 */
-        .gm-style-iw { padding: 0 !important; overflow: hidden !important; }
-        .custom-infowindow { padding: 10px; max-width: 250px; }
-        .custom-infowindow h3 { margin: 0 0 5px 0; font-size: 16px; color: #333; }
-        .custom-infowindow p { margin: 0 0 8px 0; font-size: 13px; color: #666; }
-        .custom-infowindow a { display: inline-block; color: #fff; background-color: #4285F4; text-decoration: none; font-size: 12px; padding: 5px 10px; border-radius: 4px; }
-        .custom-infowindow a:hover { background-color: #3367D6; }
-
+        /* --- 手機版專用調整 (<= 768px) --- */
         @media (max-width: 768px) {
-            .content-wrapper { flex-direction: column; }
-            #map-container { flex: none; height: 300px; width: 100%; }
-            #list-container { flex: 1; width: 100%; }
-            .search-box { flex-direction: column; align-items: stretch; }
-            .radius-group { width: 100%; }
+            .main-container { padding: 10px; height: 100vh; } /* 減少邊距 */
+            
+            .search-section { padding: 10px; margin-bottom: 8px; }
+            .search-box { flex-direction: column; align-items: stretch; gap: 8px; } /* 垂直排列 */
+            
+            /* 第一層：地址框 */
+            input#address { width: 100%; box-sizing: border-box; }
+            
+            /* 第二層：距離+按鈕 (併排) */
+            .controls-group { width: 100%; gap: 8px; }
+            .radius-group { flex: 1; }
+            button { flex: 0 0 auto; width: 80px; }
+
+            /* 內容區改為垂直排列 */
+            .content-wrapper { flex-direction: column; gap: 8px; }
+            
+            /* 地圖高度：改為佔螢幕 35% */
+            #map-container { 
+                flex: none; 
+                height: 35vh; /* 關鍵：動態高度 */
+                width: 100%; 
+            }
+            
+            /* 列表高度：吃掉剩下所有空間 */
+            #list-container { 
+                flex: 1; 
+                width: 100%; 
+                min-height: 0; /* 防止 flex 子元素溢出 */
+            }
         }
+
+        /* InfoWindow */
+        .gm-style-iw { padding: 0 !important; }
+        .custom-infowindow { padding: 10px; max-width: 200px; }
+        .custom-infowindow h3 { margin: 0 0 5px 0; font-size: 14px; }
+        .custom-infowindow p { margin: 0 0 5px 0; font-size: 12px; }
     </style>
 </head>
 <body>
 
 <div class="main-container">
-    <h2>熱門餐廳搜尋器 (v7.0 廣域捕捉版)</h2>
+    <h2>熱門餐廳搜尋 (v8.0)</h2>
     
     <div class="search-section">
         <div class="search-box">
             <input type="text" id="address" placeholder="輸入地點 (例: 新光三越)">
             
-            <div class="radius-group">
-                <input type="number" id="radius" value="1000" min="100" max="50000" step="100" list="radius-presets" placeholder="半徑">
-                <span class="unit-label">公尺</span>
-                <datalist id="radius-presets">
-                    <option value="500">走路可達 (500m)</option>
-                    <option value="1000">附近 (1km)</option>
-                    <option value="3000">標準 (3km)</option>
-                </datalist>
+            <div class="controls-group">
+                <div class="radius-group">
+                    <input type="number" id="radius" value="1000" min="100" max="50000" step="100" list="radius-presets" placeholder="半徑">
+                    <span class="unit-label">公尺</span>
+                    <datalist id="radius-presets">
+                        <option value="500">走路 (500m)</option>
+                        <option value="1000">附近 (1km)</option>
+                        <option value="3000">標準 (3km)</option>
+                    </datalist>
+                </div>
+                <button onclick="manualSearch()">搜尋</button>
             </div>
-
-            <button onclick="manualSearch()">搜尋</button>
         </div>
         <div id="status">地圖載入中...</div>
     </div>
@@ -125,10 +180,10 @@
         <div id="list-container">
             <div class="list-header">
                 <span>排序：評論數 (High to Low)</span>
-                <span style="font-size:12px; color:#888;">混合搜尋結果</span>
+                <span style="font-size:11px; color:#888;">混合結果</span>
             </div>
             <ul id="list">
-                <li style="color:#666; justify-content: center; padding: 30px;">請輸入地點開始搜尋</li>
+                <li style="color:#666; justify-content: center; padding: 20px;">請輸入地點開始搜尋</li>
             </ul>
         </div>
     </div>
@@ -171,18 +226,19 @@
                 zoom: 14,
                 mapId: "DEMO_MAP_ID", 
                 mapTypeControl: false,
-                streetViewControl: false
+                streetViewControl: false,
+                fullscreenControl: false // 手機版隱藏全螢幕按鈕以節省空間
             });
 
             globalInfoWindow = new InfoWindow({ minWidth: 200 });
             initAutocomplete();
             
-            document.getElementById('status').innerText = "✅ 搜尋框已就緒";
+            document.getElementById('status').innerText = "✅ 準備就緒";
             document.getElementById('status').classList.add("success-msg");
 
         } catch (error) {
             console.error("初始化失敗:", error);
-            document.getElementById('status').innerText = `❌ 初始化失敗，請檢查 API Key`;
+            document.getElementById('status').innerText = `❌ 初始化失敗`;
         }
     }
     initApp();
@@ -216,7 +272,7 @@
         if (!query) return alert("請輸入地點！");
         if (!Place) return;
         
-        document.getElementById('status').innerText = "🔍 正在搜尋地點...";
+        document.getElementById('status').innerText = "🔍 搜尋中...";
         try {
             const { places } = await Place.searchByText({
                 textQuery: query, 
@@ -226,7 +282,7 @@
             places.sort((a, b) => (b.userRatingCount || 0) - (a.userRatingCount || 0));
             executeRestaurantSearch(places[0].location, places[0].displayName);
         } catch (error) { 
-            alert("找不到地點: " + query); 
+            alert("找不到地點"); 
             document.getElementById('status').innerText = "❌ 找不到地點";
         }
     }
@@ -239,10 +295,11 @@
         if(isNaN(radius) || radius < 100) radius = 1000;
 
         status.className = "";
-        status.innerHTML = `📍 鎖定：<b>${locationName}</b> (範圍 ${radius}m)<br>🔍 正在進行多頻段搜尋...`;
-        list.innerHTML = '<li style="justify-content: center; padding: 30px;">搜尋飲料、餐廳、小吃中...</li>';
+        status.innerHTML = `📍 <b>${locationName}</b> (${radius}m) 搜尋中...`;
+        list.innerHTML = '<li style="justify-content: center; padding: 20px;">資料載入中...</li>';
         clearMarkers();
 
+        // 調整縮放
         let zoomLevel = 15;
         if (radius <= 500) zoomLevel = 16;
         else if (radius >= 5000) zoomLevel = 13;
@@ -257,25 +314,19 @@
         currentMarkers.push(centerMarker);
 
         try {
-            // 🔥 核心修改：同時發送 3 個不同類別的請求 (突破 20 筆限制) 🔥
-            
-            // 1. 正餐類
+            // 三路並進搜尋
             const p1 = Place.searchNearby({
                 fields: ['displayName', 'location', 'rating', 'userRatingCount', 'formattedAddress', 'id', 'types'],
                 locationRestriction: { center: locationCoords, radius: radius },
                 includedPrimaryTypes: ['restaurant', 'chinese_restaurant', 'japanese_restaurant', 'ramen_restaurant'],
                 maxResultCount: 20
             });
-
-            // 2. 飲料點心類 (飲料店通常在 tea_house, coffee_shop, store)
             const p2 = Place.searchNearby({
                 fields: ['displayName', 'location', 'rating', 'userRatingCount', 'formattedAddress', 'id', 'types'],
                 locationRestriction: { center: locationCoords, radius: radius },
                 includedPrimaryTypes: ['cafe', 'coffee_shop', 'tea_house', 'bakery', 'bar', 'ice_cream_shop'],
                 maxResultCount: 20
             });
-
-            // 3. 速食小吃類
             const p3 = Place.searchNearby({
                 fields: ['displayName', 'location', 'rating', 'userRatingCount', 'formattedAddress', 'id', 'types'],
                 locationRestriction: { center: locationCoords, radius: radius },
@@ -283,39 +334,30 @@
                 maxResultCount: 20
             });
 
-            // 等待三個請求都回來
             const results = await Promise.all([p1, p2, p3]);
 
-            // 合併所有結果 (可能會重複，例如某店既是 cafe 又是 restaurant)
             let allPlaces = [];
             results.forEach(res => {
                 if(res.places) allPlaces = allPlaces.concat(res.places);
             });
 
             if (allPlaces.length === 0) {
-                status.innerText = `⚠️ ${radius}m 內找不到資料`;
+                status.innerText = `⚠️ 範圍內無資料`;
                 list.innerHTML = '<li style="justify-content: center;">無資料</li>'; 
                 return;
             }
 
-            // 🔥 去除重複資料 (用 id 判斷) 🔥
+            // 去重
             const uniquePlaces = new Map();
             allPlaces.forEach(place => {
-                if(!uniquePlaces.has(place.id)) {
-                    uniquePlaces.set(place.id, place);
-                }
+                if(!uniquePlaces.has(place.id)) uniquePlaces.set(place.id, place);
             });
             
-            // 轉回陣列
             const finalResults = Array.from(uniquePlaces.values());
-
-            // 排序：評論數 High -> Low
             finalResults.sort((a, b) => (b.userRatingCount || 0) - (a.userRatingCount || 0));
-            
-            // 顯示前 30 名 (因為我們現在母體變大了，可以顯示多一點)
             const topResults = finalResults.slice(0, 30);
 
-            status.innerHTML = `✅ 混合搜尋完成！共找到 ${finalResults.length} 間，顯示前 ${topResults.length} 間`;
+            status.innerHTML = `✅ 找到 ${finalResults.length} 間，顯示前 ${topResults.length} 間`;
             status.className = "success-msg";
             list.innerHTML = "";
 
@@ -326,12 +368,12 @@
                 const address = place.formattedAddress || "";
                 const rankClass = (index + 1) <= 3 ? "rank top-3" : "rank";
                 
-                // 判斷類型顯示標籤 (簡單判斷)
                 let typeLabel = "";
                 const types = place.types || [];
                 if(types.includes('cafe') || types.includes('coffee_shop') || types.includes('tea_house')) typeLabel = "飲料/咖啡";
                 else if(types.includes('ramen_restaurant')) typeLabel = "拉麵";
                 else if(types.includes('bakery')) typeLabel = "烘焙";
+                else if(types.includes('meal_takeaway')) typeLabel = "外帶";
                 else typeLabel = "餐飲";
 
                 const item = document.createElement('li');
@@ -348,19 +390,16 @@
                     map.setCenter(place.location);
                     map.setZoom(17);
                     const targetMarker = markersMap.get(place.id);
-                    if(targetMarker) {
-                        google.maps.event.trigger(targetMarker, 'click'); 
-                    }
+                    if(targetMarker) google.maps.event.trigger(targetMarker, 'click'); 
                 });
                 list.appendChild(item);
 
-                // 建立地圖標記
                 createMarkerWithInfoWindow(place, index + 1, rankClass, item);
             });
 
         } catch (error) {
             console.error(error);
-            status.innerText = `❌ 錯誤: ${error.message}`;
+            status.innerText = `❌ 錯誤`;
             list.innerHTML = `<li style="justify-content: center; color: red;">${error.message}</li>`;
         }
     }
@@ -383,7 +422,7 @@
         const infoWindowContent = `
             <div class="custom-infowindow">
                 <h3>${place.displayName}</h3>
-                <p>${place.formattedAddress || "無地址資訊"}</p>
+                <p>${place.formattedAddress || ""}</p>
                 <a href="${googleMapsUrl}" target="_blank">在 Google 地圖上查看 ↗</a>
             </div>
         `;
@@ -392,6 +431,8 @@
             globalInfoWindow.close();
             globalInfoWindow.setContent(infoWindowContent);
             globalInfoWindow.open(marker.map, marker);
+            
+            // 讓列表捲動到該項目
             listItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
         });
 
