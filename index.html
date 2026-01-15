@@ -3,86 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>熱門餐廳搜尋器 (v8.1 手機優化版)</title>
+    <title>熱門餐廳搜尋器 (v9.0 穩定版)</title>
     <style>
         /* --- 全域設定 --- */
-        body, html { height: 100%; margin: 0; font-family: 'Microsoft JhengHei', sans-serif; background: #f4f7f6; overflow: hidden; }
+        body, html { 
+            margin: 0; font-family: 'Microsoft JhengHei', sans-serif; 
+            background: #f4f7f6; 
+            /* 移除 overflow: hidden，恢復自然捲動，解決卡住問題 */
+            overflow-x: hidden; 
+        }
         
         .main-container {
-            max-width: 1200px; margin: 0 auto; padding: 15px; 
-            height: 100vh; box-sizing: border-box; 
+            max-width: 1200px; margin: 0 auto; 
+            min-height: 100vh; /* 最小高度，允許內容長高 */
             display: flex; flex-direction: column;
         }
-        h2 { text-align: center; color: #333; margin: 0 0 10px 0; font-size: 1.2rem; flex-shrink: 0; display: none; /* 手機版隱藏標題以爭取空間 */ }
-        @media (min-width: 769px) { h2 { display: block; } }
 
-        /* --- 搜尋區塊 --- */
+        /* --- 搜尋區塊 (Sticky 置頂關鍵) --- */
         .search-section {
-            background: white; padding: 10px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 10px; flex-shrink: 0;
+            background: white; padding: 10px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            /* 🔥 關鍵：讓搜尋欄永遠黏在頂部 🔥 */
+            position: sticky; 
+            top: 0; 
+            z-index: 1000; 
         }
 
-        /* 搜尋列容器 */
-        .search-box { 
-            display: flex; gap: 8px; align-items: center; width: 100%;
-        }
+        .search-box { display: flex; gap: 8px; align-items: center; width: 100%; }
 
-        /* 1. 地點輸入框容器 (為了放 X 按鈕) */
+        /* 輸入框容器 */
         .input-wrapper {
-            position: relative;
-            flex: 3; /* 佔最多空間 */
-            display: flex; align-items: center;
+            position: relative; flex: 1; display: flex; align-items: center;
         }
         
         input#address { 
-            width: 100%; padding: 10px 30px 10px 10px; /* 右邊留空給 X 按鈕 */
+            width: 100%; padding: 12px 35px 12px 12px; /* 加大 padding 方便手指點擊 */
             font-size: 16px; border: 1px solid #ddd; border-radius: 8px; outline: none; 
-            box-sizing: border-box;
+            box-sizing: border-box; background: #fff;
         }
         input#address:focus { border-color: #4285F4; }
 
         /* 清除按鈕 (X) */
         .clear-btn {
-            position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
-            background: #ccc; color: white; border: none; border-radius: 50%;
-            width: 18px; height: 18px; line-height: 18px; text-align: center;
-            font-size: 12px; cursor: pointer; display: none; /* 預設隱藏 */
-            padding: 0;
+            position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+            background: #e0e0e0; color: #555; border: none; border-radius: 50%;
+            width: 22px; height: 22px; line-height: 22px; text-align: center;
+            font-size: 14px; cursor: pointer; display: none; padding: 0;
         }
-        .clear-btn:hover { background: #999; }
 
-        /* 2. 距離輸入框 */
+        /* 距離輸入框 */
         .radius-group {
-            position: relative; flex: 1; min-width: 70px; max-width: 100px;
+            position: relative; width: 85px; flex-shrink: 0;
         }
         input#radius {
-            width: 100%; padding: 10px; font-size: 16px; text-align: center;
+            width: 100%; padding: 12px 5px; font-size: 16px; text-align: center;
             border: 1px solid #ddd; border-radius: 8px; outline: none;
-            box-sizing: border-box;
+            box-sizing: border-box; background: #fff;
         }
-        input#radius:focus { border-color: #4285F4; }
         
-        /* 電腦版顯示單位，手機版隱藏 */
-        .unit-label {
-            position: absolute; right: 25px; top: 50%; transform: translateY(-50%);
-            color: #888; font-size: 12px; pointer-events: none;
-            display: none; 
-        }
-        @media (min-width: 769px) { .unit-label { display: block; } input#radius { text-align: left; } }
-
-        /* 3. 搜尋按鈕 */
+        /* 搜尋按鈕 */
         button#search-btn { 
-            flex: 0 0 auto; padding: 10px 15px; font-size: 16px; 
+            flex-shrink: 0; padding: 12px 15px; font-size: 16px; 
             background: #4285F4; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; 
         }
         button#search-btn:hover { background: #3367D6; }
 
-        /* 手機版按鈕文字變圖示 */
+        /* 按鈕文字/圖示切換 */
         .btn-text { display: none; }
         .btn-icon { display: inline; }
         @media (min-width: 769px) { 
             .btn-text { display: inline; } 
             .btn-icon { display: none; } 
+            .radius-group { width: 120px; }
         }
 
         #status { 
@@ -93,75 +85,79 @@
 
         /* --- 內容區塊 --- */
         .content-wrapper { 
-            flex: 1; display: flex; gap: 15px; min-height: 0; 
+            flex: 1; display: flex; gap: 15px; 
+            padding: 10px; /* 增加一點邊距 */
         }
         
         #map-container { 
             flex: 6; background: #eee; border-radius: 12px; overflow: hidden; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: relative; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+            height: 500px; /* 電腦版高度 */
         }
         #map { width: 100%; height: 100%; }
         
         #list-container { 
             flex: 4; background: white; border-radius: 12px; 
             box-shadow: 0 2px 10px rgba(0,0,0,0.1); border: 1px solid #eee;
-            display: flex; flex-direction: column; overflow: hidden;
+            display: flex; flex-direction: column;
+            /* 移除 overflow 設定，讓它自然長高 */
         }
 
         .list-header {
-            padding: 10px 15px; background: #f8f9fa; border-bottom: 1px solid #eee;
+            padding: 12px 15px; background: #f8f9fa; border-bottom: 1px solid #eee;
             color: #555; font-weight: bold; font-size: 13px;
             display: flex; justify-content: space-between; align-items: center;
-            flex-shrink: 0;
+            border-radius: 12px 12px 0 0;
         }
         
         ul#list { 
             list-style: none; padding: 0; margin: 0; 
-            overflow-y: auto; flex: 1; /* 關鍵：讓列表填滿 */
-            -webkit-overflow-scrolling: touch; 
         }
 
-        li { background: #fff; border-bottom: 1px solid #eee; padding: 12px; display: flex; align-items: flex-start; gap: 10px; cursor: pointer; }
-        li:hover { background: #f8f9fa; }
+        li { background: #fff; border-bottom: 1px solid #eee; padding: 15px; display: flex; align-items: flex-start; gap: 12px; cursor: pointer; }
+        li:hover { background: #f9f9f9; }
         
-        .rank { background: #999; color: white; width: 22px; height: 22px; border-radius: 50%; text-align: center; line-height: 22px; font-size: 11px; flex-shrink: 0; margin-top: 2px; }
+        .rank { background: #999; color: white; width: 24px; height: 24px; border-radius: 50%; text-align: center; line-height: 24px; font-size: 12px; flex-shrink: 0; margin-top: 2px; }
         .top-3 { background: #f44336; }
-        .type-badge { font-size: 10px; color: #666; background: #eee; padding: 2px 4px; border-radius: 4px; margin-left: 4px; vertical-align: middle;}
+        .type-badge { font-size: 11px; color: #666; background: #eee; padding: 2px 6px; border-radius: 4px; margin-left: 5px; }
 
         .info { flex: 1; }
-        .info h3 { margin: 0 0 4px; font-size: 15px; color: #202124; line-height: 1.3; }
-        .info p { margin: 0; color: #5f6368; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;}
-        .meta-tag { display: inline-block; background: #e8f0fe; color: #1967d2; font-size: 11px; padding: 3px 6px; border-radius: 4px; margin-top: 6px; }
+        .info h3 { margin: 0 0 5px; font-size: 16px; color: #202124; line-height: 1.4; }
+        .info p { margin: 0; color: #5f6368; font-size: 13px; }
+        .meta-tag { display: inline-block; background: #e8f0fe; color: #1967d2; font-size: 12px; padding: 4px 8px; border-radius: 4px; margin-top: 6px; }
 
         /* --- 手機版專用調整 (<= 768px) --- */
         @media (max-width: 768px) {
-            .main-container { padding: 10px; } 
+            .content-wrapper { flex-direction: column; padding: 0; gap: 0; }
             
-            /* 強制單行排列 */
-            .search-box { flex-wrap: nowrap; }
+            /* 地圖 */
+            #map-container { 
+                flex: none; 
+                width: 100%; 
+                height: 35vh; /* 佔螢幕 35% 高度 */
+                border-radius: 0; /* 手機版不需要圓角 */
+            }
             
-            /* 內容垂直排列 */
-            .content-wrapper { flex-direction: column; gap: 10px; }
-            
-            /* 地圖高度縮小，留給列表 */
-            #map-container { flex: none; height: 30vh; width: 100%; }
-            
-            /* 列表高度自動填滿 */
-            #list-container { flex: 1; width: 100%; }
+            /* 列表 */
+            #list-container { 
+                flex: none; /* 讓它自然長高 */
+                width: 100%; 
+                border-radius: 0; 
+                box-shadow: none; border: none;
+                padding-bottom: 50px; /* 底部留白，避免被瀏覽器工具列擋住 */
+            }
         }
 
         /* InfoWindow */
         .gm-style-iw { padding: 0 !important; }
-        .custom-infowindow { padding: 10px; max-width: 200px; }
-        .custom-infowindow h3 { margin: 0 0 5px 0; font-size: 14px; }
-        .custom-infowindow p { margin: 0 0 5px 0; font-size: 12px; }
-        .custom-infowindow a { font-size: 12px; color: #4285F4; }
+        .custom-infowindow { padding: 10px; max-width: 220px; }
+        .custom-infowindow h3 { margin: 0 0 5px 0; font-size: 15px; }
+        .custom-infowindow a { font-size: 13px; color: #4285F4; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="main-container">
-    <h2>熱門餐廳搜尋 (v8.1)</h2>
     
     <div class="search-section">
         <div class="search-box">
@@ -172,7 +168,6 @@
             
             <div class="radius-group">
                 <input type="number" id="radius" value="1000" min="100" max="50000" step="100" list="radius-presets" placeholder="半徑">
-                <span class="unit-label">公尺</span>
                 <datalist id="radius-presets">
                     <option value="500">500m</option>
                     <option value="1000">1km</option>
@@ -197,7 +192,7 @@
                 <span style="font-size:11px; color:#888;">混合結果</span>
             </div>
             <ul id="list">
-                <li style="color:#666; justify-content: center; padding: 20px;">請輸入地點</li>
+                <li style="color:#666; justify-content: center; padding: 30px;">請輸入地點開始搜尋</li>
             </ul>
         </div>
     </div>
@@ -205,7 +200,7 @@
 
 <script>
     // 👇👇👇 請在此填入您的 API Key 👇👇👇
-    const MY_API_KEY = "AIzaSyB5WzhHwuf3uUEJ6iNQBovL7U07E2eGXAg"; 
+    const MY_API_KEY = "在此處貼上你的API_KEY"; 
     // 👆👆👆 ----------------------- 👆👆👆
 </script>
 
@@ -221,7 +216,6 @@
     let globalInfoWindow; 
     let markersMap = new Map();
 
-    // 清除按鈕功能
     function toggleClearBtn() {
         const input = document.getElementById('address');
         const btn = document.getElementById('clear-btn');
@@ -280,7 +274,7 @@
         });
         autocomplete.addListener("place_changed", () => {
             const place = autocomplete.getPlace();
-            toggleClearBtn(); // 確保選擇後X按鈕會出現
+            toggleClearBtn();
             if (!place.geometry || !place.geometry.location) {
                 manualSearch();
                 return;
@@ -412,11 +406,18 @@
                     </div>
                 `;
                 
+                // 🔥 關鍵修正：點擊列表後，平滑捲動回頂端 (看地圖) 🔥
                 item.addEventListener('click', () => {
                     map.setCenter(place.location);
                     map.setZoom(17);
+                    
                     const targetMarker = markersMap.get(place.id);
                     if(targetMarker) google.maps.event.trigger(targetMarker, 'click'); 
+                    
+                    // 手機版：點擊後自動滑上去看地圖
+                    if(window.innerWidth <= 768) {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
                 });
                 list.appendChild(item);
 
@@ -457,7 +458,6 @@
             globalInfoWindow.close();
             globalInfoWindow.setContent(infoWindowContent);
             globalInfoWindow.open(marker.map, marker);
-            listItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
         });
 
         currentMarkers.push(marker);
